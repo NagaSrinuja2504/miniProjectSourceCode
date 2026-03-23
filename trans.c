@@ -25,11 +25,23 @@ int main(int argc, char *argv[])
     unsigned int choice; // user's choice
 
     // fopen opens the file; exits if file cannot be opened
-    if ((cfPtr = fopen("credit.dat", "rb+")) == NULL)
-    {
-        printf("%s: File could not be opened.\n", argv[0]);
-        exit(-1);
+    
+
+// create file if not exists
+cfPtr = fopen("credit.dat", "rb+");
+
+if (cfPtr == NULL) {
+    cfPtr = fopen("credit.dat", "wb+");  // create new file
+
+    struct clientData blank = {0, "", "", 0.0};
+
+    // initialize 100 empty records
+    for (int i = 0; i < 100; i++) {
+        fwrite(&blank, sizeof(struct clientData), 1, cfPtr);
     }
+
+    rewind(cfPtr);
+}
 
     // enable user to specify action
     while ((choice = enterChoice()) != 5)
@@ -81,21 +93,21 @@ void textFile(FILE *readPtr)
         fprintf(writePtr, "%-6s%-16s%-11s%10s\n", "Acct", "Last Name", "First Name", "Balance");
 
         // copy all records from random-access file into text file
-        while (!feof(readPtr))
+        while (fread(&client, sizeof(struct clientData), 1, readPtr))
         {
-            result = fread(&client, sizeof(struct clientData), 1, readPtr);
-
-            // write single record to text file
-            if (result != 0 && client.acctNum != 0)
-            {
-                fprintf(writePtr, "%-6d%-16s%-11s%10.2f\n", client.acctNum, client.lastName, client.firstName,
-                        client.balance);
-            } // end if
-        }     // end while
+            
+    if (client.acctNum != 0) {
+        fprintf(writePtr, "%-6d%-16s%-11s%10.2f\n",
+                client.acctNum, client.lastName,
+                client.firstName, client.balance);
+    }
+}
+            
+    }    // end while
 
         fclose(writePtr); // fclose closes the file
     }                     // end else
-} // end function textFile
+// end function textFile
 
 // update balance in record
 void updateRecord(FILE *fPtr)
@@ -125,6 +137,10 @@ void updateRecord(FILE *fPtr)
         // request transaction amount from user
         printf("%s", "Enter charge ( + ) or payment ( - ): ");
         scanf("%lf", &transaction);
+        if (account < 1 || account > 100) {
+    printf("Invalid account number\n");
+    return;
+}
         client.balance += transaction; // update record balance
 
         printf("%-6d%-16s%-11s%10.2f\n", client.acctNum, client.lastName, client.firstName, client.balance);
